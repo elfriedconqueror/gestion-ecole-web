@@ -2,10 +2,8 @@
 session_start();
 require_once '../config/db.php';
 
-if (!isset($_SESSION["type_utilisateur"])) {
-    header("Location: login.php");
-    exit;
-}
+
+
 
 $nom = isset($_SESSION["nom"]) ? $_SESSION["nom"] : '';
 $type = $_SESSION["type_utilisateur"];
@@ -127,10 +125,12 @@ $type = $_SESSION["type_utilisateur"];
                 <a href="../gerer_enseignant/index.php">Gérer les enseignants</a>
                 <a href="../gerer_salle_classe/index.php">Gérer les salles de classe</a>
                 <a href="../gerer_matiere/liste_matieres.php">Gérer les matières</a>
-                <a href="../gerer_presences/index.php">Gérer les présences</a>
-                <a href="../gerer_inscriptions/index.php">Gérer les inscriptions</a>
+                <a href="../gerer_etudiant/presence/index.php">Gérer les présences</a>
+                <a href="../gerer_inscription/inscription.php">Gérer les inscriptions</a>
+                <a href="../gerer_note/notes.php">Gérer voir les notes</a>
+                <a href="../emploi/index.php">Gérer les emplois de temp</a>
             <?php elseif ($type === "Enseignant"): ?>
-                <a href="../gerer_notes.php">Gérer les notes</a>
+                <a href="../gerer_note/index.php">Gérer les notes</a>
                 <a href="../liste_etudiants.php">Liste des étudiants</a>
             <?php elseif ($type === "Etudiant"): ?>
                 <a href="../mes_notes.php">Mes notes</a>

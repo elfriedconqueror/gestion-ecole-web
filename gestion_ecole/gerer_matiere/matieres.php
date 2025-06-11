@@ -7,11 +7,9 @@ if ($classe_id <= 0) {
     exit;
 }
 
-// Récupérer les infos sur la classe
 $classe_res = mysqli_query($conn, "SELECT nom FROM classe WHERE id = $classe_id");
 $classe = mysqli_fetch_assoc($classe_res);
 
-// Récupérer les matières associées à la classe
 $matiere_query = "
     SELECT m.id AS matiere_id, m.nom AS matiere_nom, m.coefficient
     FROM classe_matiere cm
