@@ -2,7 +2,10 @@
 session_start();
 require_once '../config/db.php';
 
-
+if (!isset($_SESSION["utilisateur_id"]) || !isset($_SESSION["type_utilisateur"])) {
+    header("Location: ../login.php");
+    exit;
+}
 
 
 $nom = isset($_SESSION["nom"]) ? $_SESSION["nom"] : '';
@@ -129,12 +132,17 @@ $type = $_SESSION["type_utilisateur"];
                 <a href="../gerer_inscription/inscription.php">Gérer les inscriptions</a>
                 <a href="../gerer_note/notes.php">Gérer voir les notes</a>
                 <a href="../emploi/index.php">Gérer les emplois de temp</a>
+                <a href="../statistique.php">📊Voir les statistiques</a>
             <?php elseif ($type === "Enseignant"): ?>
-                <a href="../gerer_note/index.php">Gérer les notes</a>
-                <a href="../liste_etudiants.php">Liste des étudiants</a>
+                 <a href="../gerer_note/index.php">Gérer les notes</a>
+                 <a href="../emploi/emploi_enseignant.php">Mon emploi du temps</a>
+                 <a href="../gerer_note/statistiques_notes.php">📊 Statistiques de notes</a>
+                 <a href="../generer_quiz.php">📊 Génerer un Quiz</a>
             <?php elseif ($type === "Etudiant"): ?>
                 <a href="../mes_notes.php">Mes notes</a>
                 <a href="../mon_bulletin.php">Mon bulletin</a>
+                <a href="../gerer_etudiant/presence/etat_presence.php">Voir mes états d'abscences</a>
+                 <a href="../poser_question.php">📊 Chat avec l'IA</a>
             <?php endif; ?>
             <a href="logout.php" class="logout">Déconnexion</a>
         </nav>

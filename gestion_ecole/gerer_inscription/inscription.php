@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $classe_id = (int)$_POST['classe_id'];
     $annee_scolaire = trim($_POST['annee_scolaire']);
     $montant_paye = floatval($_POST['montant_paye']);
-   $type_paiement = isset($_POST['type_paiement']) ? $_POST['type_paiement'] : 'Inscription';
+    $type_paiement = isset($_POST['type_paiement']) ? $_POST['type_paiement'] : 'Inscription';
 
     if (!$nom || !$prenom || !$email || !$password || !$classe_id || !$annee_scolaire || !$type_paiement) {
         $error = "Veuillez remplir tous les champs obligatoires.";
@@ -72,7 +72,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmtPaiement->bind_param("idds", $id_utilisateur, $montantfinal, $montant_paye, $type_paiement);
             $stmtPaiement->execute();
 
-            $success = "Étudiant inscrit avec succès. Matricule : $matricule";
+            // Génération automatique de la facture HTML
+            $factureHTML = "
+            <html>
+            <head>
+                <meta charset='UTF-8'>
+                <style>
+                    body { font-family: Arial; padding: 30px; }
+                    h1 { color: #003366; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                    td, th { border: 1px solid #ccc; padding: 8px; text-align: left; }
+                    .total { font-weight: bold; color: #003366; }
+                    .btn-print {
+                        background: #003366;
+                        color: white;
+                        padding: 10px 20px;
+                        border: none;
+                        margin-top: 30px;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    }
+                    @media print {
+                        .btn-print { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <h1>Facture d'inscription</h1>
+                <p><strong>Nom :</strong> $nom $prenom</p>
+                <p><strong>Matricule :</strong> $matricule</p>
+                <p><strong>Date :</strong> " . date('d/m/Y') . "</p>
+
+                <table>
+                    <tr><th>Type de paiement</th><td>$type_paiement</td></tr>
+                    <tr><th>Montant payé</th><td>" . number_format($montant_paye, 2, ',', ' ') . " FCFA</td></tr>
+                    <tr><th>Montant demandé</th><td>" . number_format($montantfinal, 2, ',', ' ') . " FCFA</td></tr>
+                    <tr class='total'><th>Reste à payer</th><td>" . number_format($montantfinal - $montant_paye, 2, ',', ' ') . " FCFA</td></tr>
+                </table>
+
+                <button class='btn-print' onclick='window.print()'>📄 Télécharger la facture</button>
+
+                <p style='margin-top:40px;'>Merci pour votre confiance.<br>L'administration</p>
+            </body>
+            </html>
+            ";
+
+            $repertoire = '../factures/';
+            if (!is_dir($repertoire)) {
+                mkdir($repertoire, 0777, true);
+            }
+
+            $nomFichier = $repertoire . "facture_" . $matricule . ".html";
+            file_put_contents($nomFichier, $factureHTML);
+
+            $success = "Étudiant inscrit avec succès. Matricule : $matricule. <br><a href='$nomFichier' target='_blank'>Voir / Télécharger la facture</a>";
         }
     }
 }
@@ -91,34 +145,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php if (!empty($error)): ?>
         <p style="color:red;"><?= htmlspecialchars($error) ?></p>
     <?php elseif (!empty($success)): ?>
-        <p style="color:green;"><?= htmlspecialchars($success) ?></p>
+        <p style="color:green;"><?= $success ?></p>
     <?php endif; ?>
 
     <form method="post">
         <label>Nom:</label>
-        <input type="text" name="nom" required value="<?= isset($nom) ? htmlspecialchars($nom) : '' ?>">
+        <input type="text" name="nom" required>
 
         <label>Prénom:</label>
-        <input type="text" name="prenom" required value="<?= isset($prenom) ? htmlspecialchars($prenom) : '' ?>">
+        <input type="text" name="prenom" required>
 
         <label>Date de naissance:</label>
-        <input type="date" name="date_naissance" required value="<?= isset($date_naissance) ? htmlspecialchars($date_naissance) : '' ?>">
+        <input type="date" name="date_naissance" required>
 
         <label>Genre:</label>
         <select name="genre" required>
             <option value="">--Choisir--</option>
-            <option value="M" <?= (isset($genre) && $genre === 'M') ? 'selected' : '' ?>>Masculin</option>
-            <option value="F" <?= (isset($genre) && $genre === 'F') ? 'selected' : '' ?>>Féminin</option>
+            <option value="M">Masculin</option>
+            <option value="F">Féminin</option>
         </select>
 
         <label>Adresse:</label>
-        <textarea name="adresse"><?= isset($adresse) ? htmlspecialchars($adresse) : '' ?></textarea>
+        <textarea name="adresse"></textarea>
 
         <label>Téléphone:</label>
-        <input type="text" name="telephone" value="<?= isset($telephone) ? htmlspecialchars($telephone) : '' ?>">
+        <input type="text" name="telephone">
 
         <label>Email:</label>
-        <input type="email" name="email" required value="<?= isset($email) ? htmlspecialchars($email) : '' ?>">
+        <input type="email" name="email" required>
 
         <label>Mot de passe:</label>
         <input type="password" name="password" required>
@@ -127,23 +181,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <select name="classe_id" required>
             <option value="">--Choisir--</option>
             <?php while ($c = mysqli_fetch_assoc($classes)): ?>
-                <option value="<?= $c['id'] ?>" <?= (isset($classe_id) && $classe_id == $c['id']) ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($c['nom']) ?>
-                </option>
+                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['nom']) ?></option>
             <?php endwhile; ?>
         </select>
 
         <label>Année scolaire (ex: 2025-2026):</label>
-        <input type="text" name="annee_scolaire" placeholder="2025-2026" required value="<?= isset($annee_scolaire) ? htmlspecialchars($annee_scolaire) : '' ?>">
+        <input type="text" name="annee_scolaire" placeholder="2025-2026" required>
 
         <label>Montant payé (en FCFA):</label>
-        <input type="number" step="0.01" name="montant_paye" min="0" required value="<?= isset($montant_paye) ? htmlspecialchars($montant_paye) : '' ?>">
+        <input type="number" step="0.01" name="montant_paye" min="0" required>
 
         <label>Type de paiement :</label>
         <select name="type_paiement" required>
-            <option value="Inscription" <?= (isset($type_paiement) && $type_paiement === 'Inscription') ? 'selected' : '' ?>>Inscription</option>
-            <option value="Mensualité" <?= (isset($type_paiement) && $type_paiement === 'Mensualité') ? 'selected' : '' ?>>Mensualité</option>
-            <option value="Autre" <?= (isset($type_paiement) && $type_paiement === 'Autre') ? 'selected' : '' ?>>Autre</option>
+            <option value="Inscription">Inscription</option>
+            <option value="Mensualité">Mensualité</option>
+            <option value="Autre">Autre</option>
         </select>
 
         <p>Montant total demandé par l'école: <strong><?= number_format($montantfinal, 2, ',', ' ') ?> FCFA</strong></p>
